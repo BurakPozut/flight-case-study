@@ -1,4 +1,4 @@
-package com.flightaggregator.flight_aggregator_api.model.providerA;
+package com.flightaggregator.flight_aggregator_api.model.providerB;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,17 +9,17 @@ import jakarta.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "availabilitySearchResponse")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class SearchResult {
+public class SearchResultB {
 	private boolean hasError = false;
 
-	private List<Flight> flightOptions = new ArrayList<>();
+	private List<FlightB> flightOptions = new ArrayList<>();
 	private String errorMessage;
 
 	// Constructors
-	public SearchResult() {
+	public SearchResultB() {
 	}
 
-	public SearchResult(boolean hasError, List<Flight> flightOptions, String errorMessage) {
+	public SearchResultB(boolean hasError, List<FlightB> flightOptions, String errorMessage) {
 		this.hasError = hasError;
 		this.flightOptions = flightOptions;
 		this.errorMessage = errorMessage;
@@ -34,11 +34,11 @@ public class SearchResult {
 		this.hasError = hasError;
 	}
 
-	public List<Flight> getFlightOptions() {
+	public List<FlightB> getFlightOptions() {
 		return flightOptions;
 	}
 
-	public void setFlightOptions(List<Flight> flightOptions) {
+	public void setFlightOptions(List<FlightB> flightOptions) {
 		this.flightOptions = flightOptions;
 	}
 

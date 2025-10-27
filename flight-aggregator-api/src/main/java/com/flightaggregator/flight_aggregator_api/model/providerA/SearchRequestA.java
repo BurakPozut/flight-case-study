@@ -12,7 +12,7 @@ import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 @XmlRootElement(name = "availabilitySearchRequest", namespace = "http://flightprovidera.com")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class SearchRequest {
+public class SearchRequestA {
 	@XmlElement(namespace = "http://flightprovidera.com")
 	private String origin = "";
 	@XmlElement(namespace = "http://flightprovidera.com")
@@ -22,10 +22,10 @@ public class SearchRequest {
 	private LocalDateTime departureDate;
 
 	// Constructors
-	public SearchRequest() {
+	public SearchRequestA() {
 	}
 
-	public SearchRequest(String origin, String destination, LocalDateTime departureDate) {
+	public SearchRequestA(String origin, String destination, LocalDateTime departureDate) {
 		this.origin = origin;
 		this.destination = destination;
 		this.departureDate = departureDate;

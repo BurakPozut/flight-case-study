@@ -8,9 +8,12 @@ import org.springframework.stereotype.Service;
 
 import com.flightaggregator.flight_aggregator_api.dto.FlightResponse;
 import com.flightaggregator.flight_aggregator_api.dto.FlightSearchRequest;
-import com.flightaggregator.flight_aggregator_api.model.providerA.Flight;
-import com.flightaggregator.flight_aggregator_api.model.providerA.SearchRequest;
-import com.flightaggregator.flight_aggregator_api.model.providerA.SearchResult;
+import com.flightaggregator.flight_aggregator_api.model.providerA.FlightA;
+import com.flightaggregator.flight_aggregator_api.model.providerA.SearchRequestA;
+import com.flightaggregator.flight_aggregator_api.model.providerA.SearchResultA;
+import com.flightaggregator.flight_aggregator_api.model.providerB.FlightB;
+import com.flightaggregator.flight_aggregator_api.model.providerB.SearchRequestB;
+import com.flightaggregator.flight_aggregator_api.model.providerB.SearchResultB;
 
 @Service
 public class FlightAggregatorService {
@@ -18,20 +21,20 @@ public class FlightAggregatorService {
   @Autowired
   private FlightProviderAClient providerAClient;
 
+  @Autowired
+  private FlightProviderBClient providerBClient;
+
   public List<FlightResponse> searchFlightsFromProviderA(FlightSearchRequest request) {
-    // Convert REST DTO to SOAP model
-    SearchRequest soapRequest = new SearchRequest(
+    SearchRequestA soapRequest = new SearchRequestA(
         request.getOrigin(),
         request.getDestination(),
         request.getDepartureDate());
 
-    // Call SOAP service
-    SearchResult soapResponse = providerAClient.callAvailabilitySearch(soapRequest);
+    SearchResultA soapResponse = providerAClient.callAvailabilitySearch(soapRequest);
 
-    // Convert SOAP response to REST DTOs
     List<FlightResponse> flights = new ArrayList<>();
     if (!soapResponse.isHasError()) {
-      for (Flight flight : soapResponse.getFlightOptions()) {
+      for (FlightA flight : soapResponse.getFlightOptions()) {
         flights.add(new FlightResponse(
             flight.getFlightNo(),
             flight.getOrigin(),
@@ -45,4 +48,30 @@ public class FlightAggregatorService {
 
     return flights;
   }
+
+  public List<FlightResponse> searchFlightsFromProviderB(FlightSearchRequest request) {
+    SearchRequestB soapRequest = new SearchRequestB(
+        request.getOrigin(),
+        request.getDestination(),
+        request.getDepartureDate());
+
+    SearchResultB soapResponse = providerBClient.callAvailabilitySearch(soapRequest);
+
+    List<FlightResponse> flights = new ArrayList<>();
+    if (!soapResponse.isHasError()) {
+      for (FlightB flight : soapResponse.getFlightOptions()) {
+        flights.add(new FlightResponse(
+            flight.getFlightNumber(),
+            flight.getDeparture(),
+            flight.getArrival(),
+            flight.getDeparturedatetime(),
+            flight.getArrivaldatetime(),
+            flight.getPrice(),
+            "FlightProviderA"));
+      }
+    }
+
+    return flights;
+  }
+  
 }

@@ -12,7 +12,7 @@ import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 @XmlRootElement(name = "Flight")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class Flight {
+public class FlightA {
 
 	private String flightNo;
 	private String origin;
@@ -24,10 +24,10 @@ public class Flight {
 	private LocalDateTime arrivaldatetime;
 	private BigDecimal price;
 
-	public Flight() {
+	public FlightA() {
 	}
 
-	public Flight(String flightNo, String origin, String destination, LocalDateTime departuredatetime,
+	public FlightA(String flightNo, String origin, String destination, LocalDateTime departuredatetime,
 			LocalDateTime arrivaldatetime, BigDecimal price) {
 		super();
 		this.flightNo = flightNo;

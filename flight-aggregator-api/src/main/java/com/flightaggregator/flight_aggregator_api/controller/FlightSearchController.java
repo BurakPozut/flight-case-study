@@ -30,4 +30,15 @@ public class FlightSearchController {
     return ResponseEntity.ok(flightAggregatorService.searchFlightsFromProviderA(request));
   }
 
+  @GetMapping("/provider-b")
+  public ResponseEntity<List<FlightResponse>> searchFlightsFromProviderB(
+    @RequestParam String departure,
+    @RequestParam String arrival,
+    @RequestParam String departureDate
+  ) {
+    FlightSearchRequest request = new FlightSearchRequest(departure, arrival, LocalDateTime.parse(departureDate));
+    return ResponseEntity.ok(flightAggregatorService.searchFlightsFromProviderB(request));
+  }
+  
+
 }

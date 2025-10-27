@@ -11,7 +11,8 @@ public class SoapClientConfig {
   @Bean
   public Jaxb2Marshaller marshaller() {
     Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
-    marshaller.setPackagesToScan("com.flightaggregator.flight_aggregator_api.model.providerA");
+    marshaller.setPackagesToScan("com.flightaggregator.flight_aggregator_api.model.providerA",
+    "com.flightaggregator.flight_aggregator_api.model.providerB");
     return marshaller;
   }
 
