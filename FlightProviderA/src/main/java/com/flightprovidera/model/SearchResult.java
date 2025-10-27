@@ -1,8 +1,14 @@
-package com.flightprovidera.service;
+package com.flightprovidera.model;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement(name = "availabilitySearchResponse")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class SearchResult {
 	private boolean hasError = false;
 

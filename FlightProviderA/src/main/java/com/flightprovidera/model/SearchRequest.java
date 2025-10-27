@@ -1,10 +1,24 @@
-package com.flightprovidera.service;
+package com.flightprovidera.model;
 
 import java.time.LocalDateTime;
 
+import com.flightprovidera.adapter.LocalDateTimeAdapter;
+
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+
+@XmlRootElement(name = "availabilitySearchRequest", namespace = "http://flightprovidera.com")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class SearchRequest {
+	@XmlElement(namespace = "http://flightprovidera.com")
 	private String origin = "";
+	@XmlElement(namespace = "http://flightprovidera.com")
 	private String destination = "";
+	@XmlElement(namespace = "http://flightprovidera.com")
+	@XmlJavaTypeAdapter(LocalDateTimeAdapter.class)
 	private LocalDateTime departureDate;
 
 	// Constructors
