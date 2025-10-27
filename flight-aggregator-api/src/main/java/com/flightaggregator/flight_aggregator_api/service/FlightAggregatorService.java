@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 
 import com.flightaggregator.flight_aggregator_api.dto.FlightResponse;
 import com.flightaggregator.flight_aggregator_api.dto.FlightSearchRequest;
+import com.flightaggregator.flight_aggregator_api.model.providerA.Flight;
+import com.flightaggregator.flight_aggregator_api.model.providerA.SearchRequest;
+import com.flightaggregator.flight_aggregator_api.model.providerA.SearchResult;
 
 @Service
 public class FlightAggregatorService {
@@ -16,29 +19,30 @@ public class FlightAggregatorService {
   private FlightProviderAClient providerAClient;
 
   public List<FlightResponse> searchFlightsFromProviderA(FlightSearchRequest request) {
-    // Create SOAP XML manually
-    String soapRequest = createSoapRequest(request);
+    // Convert REST DTO to SOAP model
+    SearchRequest soapRequest = new SearchRequest(
+        request.getOrigin(),
+        request.getDestination(),
+        request.getDepartureDate());
 
-    // Call provider
-    String soapResponse = providerAClient.callAvailabilitySearch(soapRequest);
-    System.out.println("===== Soap Response ======= \n" + soapResponse);
+    // Call SOAP service
+    SearchResult soapResponse = providerAClient.callAvailabilitySearch(soapRequest);
 
-    // Parse response (for now, return empty list)
-    return new ArrayList<>();
-  }
+    // Convert SOAP response to REST DTOs
+    List<FlightResponse> flights = new ArrayList<>();
+    if (!soapResponse.isHasError()) {
+      for (Flight flight : soapResponse.getFlightOptions()) {
+        flights.add(new FlightResponse(
+            flight.getFlightNo(),
+            flight.getOrigin(),
+            flight.getDestination(),
+            flight.getDeparturedatetime(),
+            flight.getArrivaldatetime(),
+            flight.getPrice(),
+            "FlightProviderA"));
+      }
+    }
 
-  private String createSoapRequest(FlightSearchRequest request) {
-    return String.format("""
-        <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
-                       xmlns:tns="http://flightprovidera.com">
-            <soap:Body>
-                <tns:availabilitySearchRequest>
-                    <tns:origin>%s</tns:origin>
-                    <tns:destination>%s</tns:destination>
-                    <tns:departureDate>%s</tns:departureDate>
-                </tns:availabilitySearchRequest>
-            </soap:Body>
-        </soap:Envelope>
-        """, request.getOrigin(), request.getDestination(), request.getDepartureDate());
+    return flights;
   }
 }
