@@ -1,7 +1,6 @@
 package com.flightaggregator.flight_aggregator_api.aspect;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.flightaggregator.flight_aggregator_api.entity.ApiLog;
 import com.flightaggregator.flight_aggregator_api.service.ApiLogService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -15,7 +14,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import jakarta.servlet.http.HttpServletRequest;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,10 +30,11 @@ public class ApiLoggingAspect {
   @Autowired
   private ObjectMapper objectMapper;
 
-  @Around("@annotation(org.springframework.web.bind.annotation.GetMapping) || " +
+  @Around("(@annotation(org.springframework.web.bind.annotation.GetMapping) || " +
       "@annotation(org.springframework.web.bind.annotation.PostMapping) || " +
       "@annotation(org.springframework.web.bind.annotation.PutMapping) || " +
-      "@annotation(org.springframework.web.bind.annotation.DeleteMapping)")
+      "@annotation(org.springframework.web.bind.annotation.DeleteMapping)) && " +
+      "!execution(* com.flightaggregator.flight_aggregator_api.controller.ApiLogController.*(..))")
   public Object logApiCall(ProceedingJoinPoint joinPoint) throws Throwable {
 
     long startTime = System.currentTimeMillis();
@@ -57,6 +56,7 @@ public class ApiLoggingAspect {
     Object result = null;
     String responseDataJson = null;
     String provider = "REST_API"; // Default provider
+    @SuppressWarnings("unused")
     Exception exception = null;
 
     try {
