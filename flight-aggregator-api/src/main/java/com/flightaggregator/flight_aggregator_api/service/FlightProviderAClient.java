@@ -10,7 +10,7 @@ import com.flightaggregator.flight_aggregator_api.model.providerA.SearchRequestA
 import com.flightaggregator.flight_aggregator_api.model.providerA.SearchResultA;
 
 @Service
-public class FlightProviderAClient {
+public class FlightProviderAClient {// TODO add These circut breaker resilliance 4j
 
   private static final String PROVIDER_A_URL = "http://localhost:8080/ws";
 

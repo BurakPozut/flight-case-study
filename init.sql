@@ -1,6 +1,6 @@
 -- Create the api_logs table
 CREATE TABLE api_logs (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     endpoint VARCHAR(255),           -- "/api/v1/flights/IST/COV/2025-12-15T10:00:00"
     request_method VARCHAR(10),     -- "GET"
     request_data TEXT,              -- JSON of request parameters
