@@ -1,6 +1,5 @@
 package com.flightaggregator.flight_aggregator_api.service;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -8,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -81,37 +79,20 @@ public class FlightAggregatorService {
     return flights;
   }
 
-  // public List<FlightResponse> getCheapestFlights(FlightSearchRequest request) {
-  // List<FlightResponse> allFlights = searchFlightsFromProviderA(request);
-  // allFlights.addAll(searchFlightsFromProviderB(request));
-
-  // Map<String, FlightResponse> cheapestFlights = new HashMap<>();
-
-  // for (FlightResponse flightResponse : allFlights) {
-  // String key = flightResponse.getFlightNo() + "_" +
-  // flightResponse.getDepartureDateTime();
-
-  // if (!cheapestFlights.containsKey(key) ||
-  // flightResponse.getPrice().compareTo(cheapestFlights.get(key).getPrice()) < 0)
-  // {
-  // cheapestFlights.put(key, flightResponse);
-  // }
-  // }
-
-  // return new ArrayList<>(cheapestFlights.values());
-
-  // }
-
   public List<FlightResponse> getCheapestFlights(FlightSearchRequest request) {
     List<FlightResponse> flightsA = searchFlightsFromProviderA(request);
     List<FlightResponse> flightsB = searchFlightsFromProviderB(request);
 
+    // Used excepted to overcome the map resing. Map object load factor is 0.75. So
+    // if we give it a capacity of 10 it will resize when we added the 8th element
+    // (10 * 0.75 = 7).
+    // Thats why we give the capacity little higher than we need, not the exact
+    // number
     int excepted = flightsA.size() + flightsB.size();
-
     Map<FlightKey, FlightResponse> cheapest = new HashMap<>((int) Math.ceil(excepted / 0.75));
 
     for (FlightResponse fr : flightsA)
-      cheapest.merge(keyOf(fr), fr, FlightAggregatorService::cheaper);
+      cheapest.put(keyOf(fr), fr); // The map is empty there is no need for merge
     for (FlightResponse fr : flightsB)
       cheapest.merge(keyOf(fr), fr, FlightAggregatorService::cheaper);
 
@@ -123,13 +104,20 @@ public class FlightAggregatorService {
         fr.getFlightNo().toUpperCase(Locale.ROOT),
         fr.getOrigin().toUpperCase(Locale.ROOT),
         fr.getDestination().toUpperCase(Locale.ROOT),
-        fr.getDepartureDateTime());// TODO we need to change this to use Instant not local datet time
+        fr.getDepartureDateTime());// TODO we need to change this to use Instant not local date time
   }
 
   private static FlightResponse cheaper(FlightResponse x, FlightResponse y) {
+    // TODO: Handle currency mismatch (right now we don't need it)
     return y.getPrice().compareTo(x.getPrice()) < 0 ? y : x;
   }
 
+  /**
+   * Represents a unique flight identity.
+   * 'departure' currently uses LocalDateTime because providers do not supply
+   * timezone info.
+   * When available, replace with Instant normalized to UTC.
+   */
   record FlightKey(String flightNo, String origin, String destination, LocalDateTime departure) {
   }
 }
