@@ -1,7 +1,14 @@
 package com.flightaggregator.flight_aggregator_api.service;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -67,11 +74,62 @@ public class FlightAggregatorService {
             flight.getDeparturedatetime(),
             flight.getArrivaldatetime(),
             flight.getPrice(),
-            "FlightProviderA"));
+            "FlightProviderB"));
       }
     }
 
     return flights;
   }
-  
+
+  // public List<FlightResponse> getCheapestFlights(FlightSearchRequest request) {
+  // List<FlightResponse> allFlights = searchFlightsFromProviderA(request);
+  // allFlights.addAll(searchFlightsFromProviderB(request));
+
+  // Map<String, FlightResponse> cheapestFlights = new HashMap<>();
+
+  // for (FlightResponse flightResponse : allFlights) {
+  // String key = flightResponse.getFlightNo() + "_" +
+  // flightResponse.getDepartureDateTime();
+
+  // if (!cheapestFlights.containsKey(key) ||
+  // flightResponse.getPrice().compareTo(cheapestFlights.get(key).getPrice()) < 0)
+  // {
+  // cheapestFlights.put(key, flightResponse);
+  // }
+  // }
+
+  // return new ArrayList<>(cheapestFlights.values());
+
+  // }
+
+  public List<FlightResponse> getCheapestFlights(FlightSearchRequest request) {
+    List<FlightResponse> flightsA = searchFlightsFromProviderA(request);
+    List<FlightResponse> flightsB = searchFlightsFromProviderB(request);
+
+    int excepted = flightsA.size() + flightsB.size();
+
+    Map<FlightKey, FlightResponse> cheapest = new HashMap<>((int) Math.ceil(excepted / 0.75));
+
+    for (FlightResponse fr : flightsA)
+      cheapest.merge(keyOf(fr), fr, FlightAggregatorService::cheaper);
+    for (FlightResponse fr : flightsB)
+      cheapest.merge(keyOf(fr), fr, FlightAggregatorService::cheaper);
+
+    return cheapest.values().stream().sorted(Comparator.comparing(FlightResponse::getPrice)).toList();
+  }
+
+  private static FlightKey keyOf(FlightResponse fr) {
+    return new FlightKey(
+        fr.getFlightNo().toUpperCase(Locale.ROOT),
+        fr.getOrigin().toUpperCase(Locale.ROOT),
+        fr.getDestination().toUpperCase(Locale.ROOT),
+        fr.getDepartureDateTime());// TODO we need to change this to use Instant not local datet time
+  }
+
+  private static FlightResponse cheaper(FlightResponse x, FlightResponse y) {
+    return y.getPrice().compareTo(x.getPrice()) < 0 ? y : x;
+  }
+
+  record FlightKey(String flightNo, String origin, String destination, LocalDateTime departure) {
+  }
 }
