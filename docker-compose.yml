@@ -5,11 +5,11 @@ services:
     image: postgres:16
     container_name: flight-case-study-postgres
     environment:
-      POSTGRES_DB: flight_logs
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5438:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data_flight:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -26,7 +26,7 @@ services:
       dockerfile: Dockerfile
     container_name: flight-provider-a
     ports:
-      - "8080:8080"
+      - "${PROVIDER_A_PORT}:${PROVIDER_A_PORT}"
     restart: unless-stopped
     depends_on:
       postgres:
@@ -44,7 +44,7 @@ services:
       dockerfile: Dockerfile
     container_name: flight-provider-b
     ports:
-      - "8081:8081"
+      - "${PROVIDER_B_PORT}:${PROVIDER_B_PORT}"
     restart: unless-stopped
     depends_on:
       postgres:
@@ -62,13 +62,13 @@ services:
       dockerfile: Dockerfile
     container_name: flight-aggregator-api
     ports:
-      - "8082:8082"
+      - "${AGGREGATOR_PORT}:${AGGREGATOR_PORT}"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/flight_logs
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: 123456
-      PROVIDER_A_URL: http://provider-a:8080/ws
-      PROVIDER_B_URL: http://provider-b:8081/ws
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      PROVIDER_A_URL: ${PROVIDER_A_URL}
+      PROVIDER_B_URL: ${PROVIDER_B_URL}
     restart: unless-stopped
     depends_on:
       postgres:

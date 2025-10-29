@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "name": "provider.a.url",
+      "type": "java.lang.String",
+      "description": "A description for 'provider.a.url'"
+    },
+    {
+      "name": "provider.b.url",
+      "type": "java.lang.String",
+      "description": "A description for 'provider.b.url'"
+    }
+  ]
+}
