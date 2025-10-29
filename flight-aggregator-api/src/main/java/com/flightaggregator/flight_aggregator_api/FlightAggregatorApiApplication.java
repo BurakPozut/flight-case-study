@@ -9,6 +9,5 @@ public class FlightAggregatorApiApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(FlightAggregatorApiApplication.class, args);
 	}
-
 }
 // TODO: Add Unit tests

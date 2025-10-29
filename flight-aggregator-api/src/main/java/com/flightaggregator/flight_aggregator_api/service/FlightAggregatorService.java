@@ -7,6 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -51,31 +54,47 @@ public class FlightAggregatorService {
 
   public FlightSearchResult searchFlightsFromProviderA(FlightSearchRequest request) {
     long startTime = System.currentTimeMillis();
-
-    SearchRequestA soapRequest = new SearchRequestA(
-        request.getOrigin(),
-        request.getDestination(),
-        request.getDepartureDate());
-
-    SearchResultA soapResponse = providerAClient.callAvailabilitySearch(soapRequest);
-
+    int latencyMs = 0;
     List<FlightResponse> flights = new ArrayList<>();
-    if (!soapResponse.isHasError()) {
-      for (FlightA flight : soapResponse.getFlightOptions()) {
-        flights.add(new FlightResponse(
-            flight.getFlightNo(),
-            flight.getOrigin(),
-            flight.getDestination(),
-            flight.getDeparturedatetime(),
-            flight.getArrivaldatetime(),
-            flight.getPrice(),
-            "FlightProviderA"));
-      }
-    }
 
-    long endTime = System.currentTimeMillis();
+    try {
+      SearchRequestA soapRequest = new SearchRequestA(
+          request.getOrigin(),
+          request.getDestination(),
+          request.getDepartureDate());
+
+      SearchResultA soapResponse = providerAClient.callAvailabilitySearch(soapRequest).get(6, TimeUnit.SECONDS);
+
+      if (!soapResponse.isHasError()) {
+        for (FlightA flight : soapResponse.getFlightOptions()) {
+          flights.add(new FlightResponse(
+              flight.getFlightNo(),
+              flight.getOrigin(),
+              flight.getDestination(),
+              flight.getDeparturedatetime(),
+              flight.getArrivaldatetime(),
+              flight.getPrice(),
+              "FlightProviderA"));
+        }
+      }
+
+    } catch (TimeoutException e) {
+      // Timeout from CompletableFuture.get() - fallback should have handled this, but
+      // safety net
+      latencyMs = (int) (System.currentTimeMillis() - startTime);
+    } catch (ExecutionException e) {
+      // Service call failed - fallback should have returned error result
+      latencyMs = (int) (System.currentTimeMillis() - startTime);
+      // Log if needed: log.warn("Provider A call failed", e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      latencyMs = (int) (System.currentTimeMillis() - startTime);
+    } finally {
+      long endTime = System.currentTimeMillis();
+      latencyMs = latencyMs == 0 ? (int) (endTime - startTime) : latencyMs;
+    }
     FlightSearchMetadata metadata = new FlightSearchMetadata();
-    metadata.setProviderALatencyMs((int) (endTime - startTime));
+    metadata.setProviderALatencyMs(latencyMs);
     metadata.setProviderACount(flights.size());
     metadata.updateWithFlightData(flights);
     return new FlightSearchResult(flights, metadata);
@@ -83,33 +102,48 @@ public class FlightAggregatorService {
 
   public FlightSearchResult searchFlightsFromProviderB(FlightSearchRequest request) {
     long startTime = System.currentTimeMillis();
-
-    SearchRequestB soapRequest = new SearchRequestB(
-        request.getOrigin(),
-        request.getDestination(),
-        request.getDepartureDate());
-
-    SearchResultB soapResponse = providerBClient.callAvailabilitySearch(soapRequest);
-
+    int latencyMs = 0;
     List<FlightResponse> flights = new ArrayList<>();
-    if (!soapResponse.isHasError()) {
-      for (FlightB flight : soapResponse.getFlightOptions()) {
-        flights.add(new FlightResponse(
-            flight.getFlightNumber(),
-            flight.getDeparture(),
-            flight.getArrival(),
-            flight.getDeparturedatetime(),
-            flight.getArrivaldatetime(),
-            flight.getPrice(),
-            "FlightProviderB"));
+
+    try {
+
+      SearchRequestB soapRequest = new SearchRequestB(
+          request.getOrigin(),
+          request.getDestination(),
+          request.getDepartureDate());
+
+      SearchResultB soapResponse = providerBClient.callAvailabilitySearch(soapRequest).get(6, TimeUnit.SECONDS);
+
+      if (!soapResponse.isHasError()) {
+        for (FlightB flight : soapResponse.getFlightOptions()) {
+          flights.add(new FlightResponse(
+              flight.getFlightNumber(),
+              flight.getDeparture(),
+              flight.getArrival(),
+              flight.getDeparturedatetime(),
+              flight.getArrivaldatetime(),
+              flight.getPrice(),
+              "FlightProviderB"));
+        }
       }
+    } catch (TimeoutException e) {
+      // Timeout from CompletableFuture.get() - fallback should have handled this, but
+      // safety net
+      latencyMs = (int) (System.currentTimeMillis() - startTime);
+    } catch (ExecutionException e) {
+      // Service call failed - fallback should have returned error result
+      latencyMs = (int) (System.currentTimeMillis() - startTime);
+      // Log if needed: log.warn("Provider A call failed", e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      latencyMs = (int) (System.currentTimeMillis() - startTime);
+    } finally {
+      long endTime = System.currentTimeMillis();
+      latencyMs = latencyMs == 0 ? (int) (endTime - startTime) : latencyMs;
     }
-
-    long endTime = System.currentTimeMillis();
-
     // Create metadata
     FlightSearchMetadata metadata = new FlightSearchMetadata();
-    metadata.setProviderBLatencyMs((int) (endTime - startTime));
+    metadata.setProviderBLatencyMs(latencyMs);
     metadata.setProviderBCount(flights.size());
     metadata.updateWithFlightData(flights);
 
