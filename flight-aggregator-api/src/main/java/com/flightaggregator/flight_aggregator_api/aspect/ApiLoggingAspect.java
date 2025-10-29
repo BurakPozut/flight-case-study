@@ -60,7 +60,6 @@ public class ApiLoggingAspect {
 
     Object result = null;
     Integer statusCode = 200;
-    Exception exception = null;
 
     try {
       // Execute the method
@@ -86,7 +85,7 @@ public class ApiLoggingAspect {
           // Fallback: extract flight data for metadata
           if (responseEntity.getBody() instanceof List) {
             List<?> body = (List<?>) responseEntity.getBody();
-            if (!body.isEmpty() && body.get(0) instanceof FlightResponse) {
+            if (body != null && !body.isEmpty() && body.get(0) instanceof FlightResponse) {
               @SuppressWarnings("unchecked")
               List<FlightResponse> flights = (List<FlightResponse>) body;
               metadata.updateWithFlightData(flights);
@@ -96,7 +95,6 @@ public class ApiLoggingAspect {
       }
 
     } catch (Exception e) {
-      exception = e;
       statusCode = 500;
       throw e; // Re-throw the exception
     } finally {

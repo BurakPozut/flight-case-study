@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/api/v1/flights")
 @Tag(name = "Flight Search", description = "Flight search and aggregation endpoints")
 public class FlightSearchController {
-  // TODO: Add global error handling
 
   @Autowired
   private FlightAggregatorService flightAggregatorService;
