@@ -38,7 +38,8 @@ public class FlightProviderBClient {
     return CompletableFuture.completedFuture(result);
   }
 
-  public CompletableFuture<SearchResultB> callAvailabilitySearchFallback(
+  @SuppressWarnings("unused")
+  private CompletableFuture<SearchResultB> callAvailabilitySearchFallback(
       SearchRequestB requestA, Exception ex) {
     logger.warn("⚠️ CIRCUIT BREAKER FALLBACK TRIGGERED for Provider B - Exception: {} - Message: {}",
         ex != null ? ex.getClass().getSimpleName() : "Unknown",

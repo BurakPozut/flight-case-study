@@ -18,7 +18,7 @@ import io.github.resilience4j.retry.annotation.Retry;
 import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 
 @Service
-public class FlightProviderAClient {// TODO add These circut breaker resilliance 4j
+public class FlightProviderAClient {
 
   private static final Logger logger = LoggerFactory.getLogger(FlightProviderAClient.class);
 
@@ -38,7 +38,8 @@ public class FlightProviderAClient {// TODO add These circut breaker resilliance
     return CompletableFuture.completedFuture(result);
   }
 
-  public CompletableFuture<SearchResultA> callAvailabilitySearchFallback(
+  @SuppressWarnings("unused")
+  private CompletableFuture<SearchResultA> callAvailabilitySearchFallback(
       SearchRequestA requestA, Exception ex) {
     logger.warn("⚠️ CIRCUIT BREAKER FALLBACK TRIGGERED for Provider A - Exception: {} - Message: {}",
         ex != null ? ex.getClass().getSimpleName() : "Unknown",
