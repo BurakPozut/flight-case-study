@@ -94,6 +94,7 @@ public class FlightAggregatorService {
       latencyMs = latencyMs == 0 ? (int) (endTime - startTime) : latencyMs;
     }
     FlightSearchMetadata metadata = new FlightSearchMetadata();
+    metadata.setDepartureDate(request.getDepartureDate().toLocalDate());
     metadata.setProviderALatencyMs(latencyMs);
     metadata.setProviderACount(flights.size());
     metadata.updateWithFlightData(flights);
@@ -143,6 +144,7 @@ public class FlightAggregatorService {
     }
     // Create metadata
     FlightSearchMetadata metadata = new FlightSearchMetadata();
+    metadata.setDepartureDate(request.getDepartureDate().toLocalDate());
     metadata.setProviderBLatencyMs(latencyMs);
     metadata.setProviderBCount(flights.size());
     metadata.updateWithFlightData(flights);

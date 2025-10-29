@@ -147,6 +147,14 @@ public class ApiLoggingAspect {
             case "departureDate":
               if (arg instanceof LocalDateTime) {
                 metadata.setDepartureDate(((LocalDateTime) arg).toLocalDate());
+              } else if (arg instanceof String) {
+                // Handle String format for provider-a and provider-b endpoints
+                try {
+                    LocalDateTime dateTime = LocalDateTime.parse((String) arg);
+                    metadata.setDepartureDate(dateTime.toLocalDate());
+                } catch (Exception e) {
+                    logger.warn("Failed to parse departure date string: {}", arg);
+                }
               }
               break;
             case "destionation": // Handle typo in controller
