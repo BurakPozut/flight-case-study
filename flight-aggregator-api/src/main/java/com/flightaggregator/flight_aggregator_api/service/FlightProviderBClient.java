@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.ws.client.core.WebServiceTemplate;
 import org.springframework.ws.soap.client.core.SoapActionCallback;
@@ -22,7 +23,9 @@ public class FlightProviderBClient {
 
   private static final Logger logger = LoggerFactory.getLogger(FlightProviderBClient.class);
 
-  private static final String PROVIDER_A_URL = "http://localhost:8081/ws";
+  // private static final String PROVIDER_A_URL = "http://localhost:8081/ws";
+  @Value("${provider.b.url:http://localhost:8081/ws}")
+  private String providerBUrl;
 
   @Autowired
   @Qualifier("providerBTemplate")
@@ -32,7 +35,7 @@ public class FlightProviderBClient {
   @Retry(name = "providerB")
   @TimeLimiter(name = "providerB")
   public CompletableFuture<SearchResultB> callAvailabilitySearch(SearchRequestB request) {
-    SearchResultB result = (SearchResultB) webServiceTemplate.marshalSendAndReceive(PROVIDER_A_URL, request,
+    SearchResultB result = (SearchResultB) webServiceTemplate.marshalSendAndReceive(providerBUrl, request,
         new SoapActionCallback("http://flightproviderb.com/availabilitySearchRequest"));
 
     return CompletableFuture.completedFuture(result);

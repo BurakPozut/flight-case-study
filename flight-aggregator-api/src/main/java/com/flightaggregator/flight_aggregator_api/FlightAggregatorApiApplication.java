@@ -10,4 +10,3 @@ public class FlightAggregatorApiApplication {
 		SpringApplication.run(FlightAggregatorApiApplication.class, args);
 	}
 }
-// TODO: Add Unit tests

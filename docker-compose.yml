@@ -5,15 +5,84 @@ services:
     image: postgres:16
     container_name: flight-case-study-postgres
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: flight_logs
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "5438:5432"
     volumes:
       - postgres_data_flight:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  provider-a:
+    build:
+      context: ./FlightProviderA
+      dockerfile: Dockerfile
+    container_name: flight-provider-a
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ws/flight-provider-a.wsdl || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  provider-b:
+    build:
+      context: ./FlightProviderB
+      dockerfile: Dockerfile
+    container_name: flight-provider-b
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/ws/flight-provider-b.wsdl || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  aggregator-api:
+    build:
+      context: ./flight-aggregator-api
+      dockerfile: Dockerfile
+    container_name: flight-aggregator-api
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/flight_logs
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
+      PROVIDER_A_URL: http://provider-a:8080/ws
+      PROVIDER_B_URL: http://provider-b:8081/ws
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      provider-a:
+        condition: service_healthy
+      provider-b:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/swagger-ui.html || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 volumes:
   postgres_data_flight:
