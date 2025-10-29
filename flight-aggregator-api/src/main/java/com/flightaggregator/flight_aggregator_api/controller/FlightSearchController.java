@@ -12,12 +12,19 @@ import org.springframework.web.bind.annotation.RestController;
 import com.flightaggregator.flight_aggregator_api.dto.FlightResponse;
 import com.flightaggregator.flight_aggregator_api.dto.FlightSearchRequest;
 import com.flightaggregator.flight_aggregator_api.service.FlightAggregatorService;
+
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/api/v1/flights")
+@Tag(name = "Flight Search", description = "Flight search and aggregation endpoints")
 public class FlightSearchController {
   // TODO: Add global error handling
 
@@ -25,6 +32,7 @@ public class FlightSearchController {
   private FlightAggregatorService flightAggregatorService;
 
   @GetMapping("/{origin}/{destination}/{departureDate}")
+  @ApiResponse(responseCode = "200", description = "Successfully retrived flight search results", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FlightResponse.class)))
   public ResponseEntity<List<FlightResponse>> getAllFlights(
       @PathVariable String origin,
       @PathVariable String destination,

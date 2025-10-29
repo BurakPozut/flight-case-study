@@ -2,9 +2,18 @@ package com.flightaggregator.flight_aggregator_api.dto;
 
 import java.time.LocalDateTime;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
+
+@Schema(description = "Filgth search request")
 public class FlightSearchRequest {
+  @Schema(description = "Origin airport code", example = "IST", requiredMode = RequiredMode.REQUIRED)
   private String origin;
+
+  @Schema(description = "Destination airport code", example = "LHR", required = true)
   private String destination;
+
+  @Schema(description = "Departure date and time", example = "2024-12-25T10:00:00", required = true)
   private LocalDateTime departureDate;
 
   public FlightSearchRequest() {

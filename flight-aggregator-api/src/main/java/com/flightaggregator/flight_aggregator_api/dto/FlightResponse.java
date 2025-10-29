@@ -3,14 +3,31 @@ package com.flightaggregator.flight_aggregator_api.dto;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Flight search response")
 public class FlightResponse {
+  @Schema(description = "Flight number", example = "TK001")
   private String flightNo;
+
+  @Schema(description = "Origin airport code", example = "IST")
   private String origin;
+
+  @Schema(description = "Destination airport code", example = "LHR")
   private String destination;
+
+  @Schema(description = "Departure date and time", example = "2024-12-25T10:00:00")
   private LocalDateTime departureDateTime;
+
+  @Schema(description = "Arrival date and time", example = "2024-12-25T14:30:00")
   private LocalDateTime arrivalDateTime;
+
+  @Schema(description = "Flight price", example = "299.99")
   private BigDecimal price;
-  private String provider; // "FlightProviderA" or "FlightProviderB"
+
+  @Schema(description = "Flight provider", example = "FlightProviderA", allowableValues = { "FlightProviderA",
+      "FlightProviderB" })
+  private String provider;
 
   public FlightResponse() {
   }

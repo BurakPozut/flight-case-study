@@ -34,7 +34,9 @@ public class ApiLoggingAspect {
       "@annotation(org.springframework.web.bind.annotation.PostMapping) || " +
       "@annotation(org.springframework.web.bind.annotation.PutMapping) || " +
       "@annotation(org.springframework.web.bind.annotation.DeleteMapping)) && " +
-      "!execution(* com.flightaggregator.flight_aggregator_api.controller.ApiLogController.*(..))")
+      "!execution(* com.flightaggregator.flight_aggregator_api.controller.ApiLogController.*(..)) &&" +
+      "!execution(* org.springdoc..*(..)) && " +
+      "!within(org.springdoc..*)")
   public Object logApiCall(ProceedingJoinPoint joinPoint) throws Throwable {
 
     long startTime = System.currentTimeMillis();
@@ -51,7 +53,14 @@ public class ApiLoggingAspect {
     requestData.put("pathVariables", extractPathVariables(joinPoint));
     requestData.put("queryString", request.getQueryString());
 
-    String requestDataJson = objectMapper.writeValueAsString(requestData);
+    // String requestDataJson = objectMapper.writeValueAsString(requestData);
+    String requestDataJson;
+    try {
+      requestDataJson = objectMapper.writeValueAsString(requestData);
+    } catch (Exception e) {
+      logger.warn("Failed to serialize request data: {}", e.getMessage());
+      requestDataJson = "{\"error\": \"Serialization failed\", \"endpoint\": \"" + endpoint + "\"}";
+    }
 
     Object result = null;
     String responseDataJson = null;
