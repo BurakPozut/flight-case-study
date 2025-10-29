@@ -13,16 +13,20 @@ import java.time.LocalDateTime;
 
 @Repository
 public interface ApiLogRepository extends JpaRepository<ApiLog, Long> {
-  Page<ApiLog> findByProvider(String provider, Pageable pageable);
 
   Page<ApiLog> findByEndpointContaining(String endpoint, Pageable pageable);
 
   Page<ApiLog> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end, Pageable pageable);
 
-  Page<ApiLog> findByProviderAndCreatedAtBetween(String provider, LocalDateTime start, LocalDateTime end,
-      Pageable pageable);
+  Page<ApiLog> findByProviderACountGreaterThan(Integer count, Pageable pageable);
 
-  Page<ApiLog> findByResponseTimeMsGreaterThan(Integer threshold, Pageable pageable);
+  Page<ApiLog> findByProviderBCountGreaterThan(Integer count, Pageable pageable);
+
+  Page<ApiLog> findByOriginAndDestination(String origin, String destination, Pageable pageable);
+
+  Page<ApiLog> findByDepartureDate(java.time.LocalDate departureDate, Pageable pageable);
+
+  Page<ApiLog> findByDurationMsGreaterThan(Integer threshold, Pageable pageable);
 
   @Query("SELECT DATE_TRUNC('hour', a.createdAt) as hour, COUNT(a) FROM ApiLog a GROUP BY hour ORDER BY hour DESC")
   List<Object[]> getRequestCountByHour();

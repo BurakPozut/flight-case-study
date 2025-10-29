@@ -1,5 +1,7 @@
 package com.flightaggregator.flight_aggregator_api.entity;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -20,18 +22,44 @@ public class ApiLog {
   @Column(name = "endpoint", length = 255)
   private String endpoint;
 
-  @Column(name = "request_method", length = 255)
-  private String requestMethod;
-  @Column(name = "request_data", columnDefinition = "TEXT")
-  private String requestData;
-  @Column(name = "response_data", columnDefinition = "TEXT")
-  private String responseData;
+  @Column(name = "method", length = 10)
+  private String method;
 
-  @Column(name = "response_time_ms")
-  private Integer responseTimeMs;
+  @Column(name = "status")
+  private Integer status;
 
-  @Column(name = "provider", length = 50)
-  private String provider;
+  @Column(name = "duration_ms")
+  private Integer durationMs;
+
+  @Column(name = "origin", length = 10)
+  private String origin;
+
+  @Column(name = "destination", length = 10)
+  private String destination;
+
+  @Column(name = "departure_date")
+  private LocalDate departureDate;
+
+  @Column(name = "provider_a_latency_ms")
+  private Integer providerALatencyMs;
+
+  @Column(name = "provider_b_latency_ms")
+  private Integer providerBLatencyMs;
+
+  @Column(name = "provider_a_count")
+  private Integer providerACount;
+
+  @Column(name = "provider_b_count")
+  private Integer providerBCount;
+
+  @Column(name = "min_price", precision = 10, scale = 2)
+  private BigDecimal minPrice;
+
+  @Column(name = "max_price", precision = 10, scale = 2)
+  private BigDecimal maxPrice;
+
+  @Column(name = "total_flights")
+  private Integer totalFlights;
 
   @Column(name = "created_at")
   private LocalDateTime createdAt;
@@ -41,17 +69,29 @@ public class ApiLog {
     this.createdAt = LocalDateTime.now();
   }
 
-  public ApiLog(String endpoint, String requestMethod, String requestData,
-      String responseData, Integer responseTimeMs, String provider) {
+  public ApiLog(String endpoint, String method, Integer status, Integer durationMs,
+      String origin, String destination, LocalDate departureDate,
+      Integer providerALatencyMs, Integer providerBLatencyMs,
+      Integer providerACount, Integer providerBCount,
+      BigDecimal minPrice, BigDecimal maxPrice, Integer totalFlights) {
     this();
     this.endpoint = endpoint;
-    this.requestMethod = requestMethod;
-    this.requestData = requestData;
-    this.responseData = responseData;
-    this.responseTimeMs = responseTimeMs;
-    this.provider = provider;
+    this.method = method;
+    this.status = status;
+    this.durationMs = durationMs;
+    this.origin = origin;
+    this.destination = destination;
+    this.departureDate = departureDate;
+    this.providerALatencyMs = providerALatencyMs;
+    this.providerBLatencyMs = providerBLatencyMs;
+    this.providerACount = providerACount;
+    this.providerBCount = providerBCount;
+    this.minPrice = minPrice;
+    this.maxPrice = maxPrice;
+    this.totalFlights = totalFlights;
   }
 
+  // Getters and Setters
   public Long getId() {
     return id;
   }
@@ -68,44 +108,108 @@ public class ApiLog {
     this.endpoint = endpoint;
   }
 
-  public String getRequestMethod() {
-    return requestMethod;
+  public String getMethod() {
+    return method;
   }
 
-  public void setRequestMethod(String requestMethod) {
-    this.requestMethod = requestMethod;
+  public void setMethod(String method) {
+    this.method = method;
   }
 
-  public String getRequestData() {
-    return requestData;
+  public Integer getStatus() {
+    return status;
   }
 
-  public void setRequestData(String requestData) {
-    this.requestData = requestData;
+  public void setStatus(Integer status) {
+    this.status = status;
   }
 
-  public String getResponseData() {
-    return responseData;
+  public Integer getDurationMs() {
+    return durationMs;
   }
 
-  public void setResponseData(String responseData) {
-    this.responseData = responseData;
+  public void setDurationMs(Integer durationMs) {
+    this.durationMs = durationMs;
   }
 
-  public Integer getResponseTimeMs() {
-    return responseTimeMs;
+  public String getOrigin() {
+    return origin;
   }
 
-  public void setResponseTimeMs(Integer responseTimeMs) {
-    this.responseTimeMs = responseTimeMs;
+  public void setOrigin(String origin) {
+    this.origin = origin;
   }
 
-  public String getProvider() {
-    return provider;
+  public String getDestination() {
+    return destination;
   }
 
-  public void setProvider(String provider) {
-    this.provider = provider;
+  public void setDestination(String destination) {
+    this.destination = destination;
+  }
+
+  public LocalDate getDepartureDate() {
+    return departureDate;
+  }
+
+  public void setDepartureDate(LocalDate departureDate) {
+    this.departureDate = departureDate;
+  }
+
+  public Integer getProviderALatencyMs() {
+    return providerALatencyMs;
+  }
+
+  public void setProviderALatencyMs(Integer providerALatencyMs) {
+    this.providerALatencyMs = providerALatencyMs;
+  }
+
+  public Integer getProviderBLatencyMs() {
+    return providerBLatencyMs;
+  }
+
+  public void setProviderBLatencyMs(Integer providerBLatencyMs) {
+    this.providerBLatencyMs = providerBLatencyMs;
+  }
+
+  public Integer getProviderACount() {
+    return providerACount;
+  }
+
+  public void setProviderACount(Integer providerACount) {
+    this.providerACount = providerACount;
+  }
+
+  public Integer getProviderBCount() {
+    return providerBCount;
+  }
+
+  public void setProviderBCount(Integer providerBCount) {
+    this.providerBCount = providerBCount;
+  }
+
+  public BigDecimal getMinPrice() {
+    return minPrice;
+  }
+
+  public void setMinPrice(BigDecimal minPrice) {
+    this.minPrice = minPrice;
+  }
+
+  public BigDecimal getMaxPrice() {
+    return maxPrice;
+  }
+
+  public void setMaxPrice(BigDecimal maxPrice) {
+    this.maxPrice = maxPrice;
+  }
+
+  public Integer getTotalFlights() {
+    return totalFlights;
+  }
+
+  public void setTotalFlights(Integer totalFlights) {
+    this.totalFlights = totalFlights;
   }
 
   public LocalDateTime getCreatedAt() {
@@ -114,17 +218,5 @@ public class ApiLog {
 
   public void setCreatedAt(LocalDateTime createdAt) {
     this.createdAt = createdAt;
-  }
-
-  @Override
-  public String toString() {
-    return "ApiLog{" +
-        "id=" + id +
-        ", endpoint='" + endpoint + '\'' +
-        ", requestMethod='" + requestMethod + '\'' +
-        ", responseTimeMs=" + responseTimeMs +
-        ", provider='" + provider + '\'' +
-        ", createdAt=" + createdAt +
-        '}';
   }
 }

@@ -1,10 +1,13 @@
 package com.flightaggregator.flight_aggregator_api.aspect;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flightaggregator.flight_aggregator_api.dto.FlightResponse;
+import com.flightaggregator.flight_aggregator_api.dto.FlightSearchMetadata;
 import com.flightaggregator.flight_aggregator_api.service.ApiLogService;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,9 +17,8 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Aspect
 @Component
@@ -27,14 +29,11 @@ public class ApiLoggingAspect {
   @Autowired
   private ApiLogService apiLogService;
 
-  @Autowired
-  private ObjectMapper objectMapper;
-
   @Around("(@annotation(org.springframework.web.bind.annotation.GetMapping) || " +
       "@annotation(org.springframework.web.bind.annotation.PostMapping) || " +
       "@annotation(org.springframework.web.bind.annotation.PutMapping) || " +
       "@annotation(org.springframework.web.bind.annotation.DeleteMapping)) && " +
-      "!execution(* com.flightaggregator.flight_aggregator_api.controller.ApiLogController.*(..)) &&" +
+      "!execution(* com.flightaggregator.flight_aggregator_api.controller.ApiLogController.*(..)) && " +
       "!execution(* org.springdoc..*(..)) && " +
       "!within(org.springdoc..*)")
   public Object logApiCall(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -47,103 +46,125 @@ public class ApiLoggingAspect {
     String endpoint = request.getRequestURI();
     String method = request.getMethod();
 
-    // Prepare request data
-    Map<String, Object> requestData = new HashMap<>();
-    requestData.put("parameters", request.getParameterMap());
-    requestData.put("pathVariables", extractPathVariables(joinPoint));
-    requestData.put("queryString", request.getQueryString());
-
-    // String requestDataJson = objectMapper.writeValueAsString(requestData);
-    String requestDataJson;
-    try {
-      requestDataJson = objectMapper.writeValueAsString(requestData);
-    } catch (Exception e) {
-      logger.warn("Failed to serialize request data: {}", e.getMessage());
-      requestDataJson = "{\"error\": \"Serialization failed\", \"endpoint\": \"" + endpoint + "\"}";
+    // Skip logging for Swagger/OpenAPI endpoints
+    if (endpoint.startsWith("/api-docs") ||
+        endpoint.startsWith("/swagger-ui") ||
+        endpoint.startsWith("/swagger-resources") ||
+        endpoint.startsWith("/webjars") ||
+        endpoint.contains("swagger")) {
+      return joinPoint.proceed();
     }
 
+    // Extract flight search metadata from the request
+    FlightSearchMetadata metadata = extractFlightSearchMetadata(joinPoint, endpoint);
+
     Object result = null;
-    String responseDataJson = null;
-    String provider = "REST_API"; // Default provider
-    @SuppressWarnings("unused")
+    Integer statusCode = 200;
     Exception exception = null;
 
     try {
       // Execute the method
       result = joinPoint.proceed();
 
-      // Extract response data
+      // Extract status code and flight data for metadata
       if (result instanceof ResponseEntity) {
         ResponseEntity<?> responseEntity = (ResponseEntity<?>) result;
-        responseDataJson = objectMapper.writeValueAsString(responseEntity.getBody());
-      } else {
-        responseDataJson = objectMapper.writeValueAsString(result);
-      }
+        statusCode = responseEntity.getStatusCode().value();
 
-      // Determine provider based on endpoint
-      provider = determineProvider(endpoint);
+        // Try to get metadata from request scope first
+        FlightSearchMetadata requestMetadata = (FlightSearchMetadata) request.getAttribute("flightSearchMetadata");
+        if (requestMetadata != null) {
+          metadata.setProviderALatencyMs(requestMetadata.getProviderALatencyMs());
+          metadata.setProviderBLatencyMs(requestMetadata.getProviderBLatencyMs());
+          metadata.setProviderACount(requestMetadata.getProviderACount());
+          metadata.setProviderBCount(requestMetadata.getProviderBCount());
+          metadata.setMinPrice(requestMetadata.getMinPrice());
+          metadata.setMaxPrice(requestMetadata.getMaxPrice());
+          metadata.setTotalFlights(requestMetadata.getTotalFlights());
+
+        } else {
+          // Fallback: extract flight data for metadata
+          if (responseEntity.getBody() instanceof List) {
+            List<?> body = (List<?>) responseEntity.getBody();
+            if (!body.isEmpty() && body.get(0) instanceof FlightResponse) {
+              @SuppressWarnings("unchecked")
+              List<FlightResponse> flights = (List<FlightResponse>) body;
+              metadata.updateWithFlightData(flights);
+            }
+          }
+        }
+      }
 
     } catch (Exception e) {
       exception = e;
-      responseDataJson = "{\"error\": \"" + e.getMessage() + "\"}";
+      statusCode = 500;
       throw e; // Re-throw the exception
     } finally {
       // Calculate response time
       long endTime = System.currentTimeMillis();
-      int responseTimeMs = (int) (endTime - startTime);
+      int durationMs = (int) (endTime - startTime);
 
-      // Log to database
+      // Log to database using the new metadata approach
       try {
-        apiLogService.saveApiLog(
-            endpoint,
-            method,
-            requestDataJson,
-            responseDataJson,
-            responseTimeMs,
-            provider);
+        apiLogService.saveApiLog(metadata, statusCode, durationMs);
       } catch (Exception e) {
         logger.error("Failed to save API log", e);
       }
 
       // Log to console
-      logger.info("API Call - Endpoint: {}, Method: {}, Response Time: {}ms, Provider: {}",
-          endpoint, method, responseTimeMs, provider);
+      logger.info("API Call - Endpoint: {}, Method: {}, Status: {}, Duration: {}ms, " +
+          "Origin: {}, Destination: {}, Total Flights: {}",
+          endpoint, method, statusCode, durationMs,
+          metadata.getOrigin(), metadata.getDestination(), metadata.getTotalFlights());
     }
 
     return result;
   }
 
-  private Map<String, Object> extractPathVariables(ProceedingJoinPoint joinPoint) {
-    Map<String, Object> pathVariables = new HashMap<>();
-    Object[] args = joinPoint.getArgs();
-    String[] paramNames = getParameterNames(joinPoint);
+  /**
+   * Extract flight search metadata from the method parameters
+   */
+  private FlightSearchMetadata extractFlightSearchMetadata(ProceedingJoinPoint joinPoint, String endpoint) {
+    FlightSearchMetadata metadata = new FlightSearchMetadata(endpoint);
 
-    for (int i = 0; i < args.length; i++) {
-      if (paramNames != null && i < paramNames.length) {
-        pathVariables.put(paramNames[i], args[i]);
+    Object[] args = joinPoint.getArgs();
+    Signature signature = joinPoint.getSignature();
+
+    if (signature instanceof MethodSignature) {
+      MethodSignature methodSignature = (MethodSignature) signature;
+      String[] paramNames = methodSignature.getParameterNames();
+
+      for (int i = 0; i < args.length; i++) {
+        if (paramNames != null && i < paramNames.length && args[i] != null) {
+          String paramName = paramNames[i];
+          Object arg = args[i];
+
+          switch (paramName) {
+            case "origin":
+              metadata.setOrigin((String) arg);
+              break;
+            case "destination":
+              metadata.setDestination((String) arg);
+              break;
+            case "departureDate":
+              if (arg instanceof LocalDateTime) {
+                metadata.setDepartureDate(((LocalDateTime) arg).toLocalDate());
+              }
+              break;
+            case "destionation": // Handle typo in controller
+              metadata.setDestination((String) arg);
+              break;
+            case "departure": // For provider-b endpoint
+              metadata.setOrigin((String) arg);
+              break;
+            case "arrival": // For provider-b endpoint
+              metadata.setDestination((String) arg);
+              break;
+          }
+        }
       }
     }
 
-    return pathVariables;
-  }
-
-  private String[] getParameterNames(ProceedingJoinPoint joinPoint) {
-    // This is a simplified version - in production you might want to use more
-    // sophisticated reflection
-    return Arrays.stream(joinPoint.getArgs())
-        .map(arg -> arg != null ? arg.getClass().getSimpleName() : "null")
-        .toArray(String[]::new);
-  }
-
-  private String determineProvider(String endpoint) {
-    if (endpoint.contains("/provider-a")) {
-      return "FlightProviderA";
-    } else if (endpoint.contains("/provider-b")) {
-      return "FlightProviderB";
-    } else if (endpoint.contains("/cheapest")) {
-      return "FlightAggregator";
-    } else {
-      return "REST_API";
-    }
+    return metadata;
   }
 }

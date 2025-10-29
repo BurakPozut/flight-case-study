@@ -12,7 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.flightaggregator.flight_aggregator_api.dto.FlightResponse;
+import com.flightaggregator.flight_aggregator_api.dto.FlightSearchMetadata;
 import com.flightaggregator.flight_aggregator_api.dto.FlightSearchRequest;
+import com.flightaggregator.flight_aggregator_api.dto.FlightSearchResult;
 import com.flightaggregator.flight_aggregator_api.model.providerA.FlightA;
 import com.flightaggregator.flight_aggregator_api.model.providerA.SearchRequestA;
 import com.flightaggregator.flight_aggregator_api.model.providerA.SearchResultA;
@@ -29,7 +31,27 @@ public class FlightAggregatorService {
   @Autowired
   private FlightProviderBClient providerBClient;
 
-  public List<FlightResponse> searchFlightsFromProviderA(FlightSearchRequest request) {
+  public FlightSearchResult getAllFlights(FlightSearchRequest request) {
+    FlightSearchResult resultA = searchFlightsFromProviderA(request);
+    FlightSearchResult resultB = searchFlightsFromProviderB(request);
+
+    List<FlightResponse> allFlights = new ArrayList<>();
+    allFlights.addAll(resultA.getFlights());
+    allFlights.addAll(resultB.getFlights());
+
+    FlightSearchMetadata combinedMetadata = new FlightSearchMetadata();
+    combinedMetadata.setProviderALatencyMs(resultA.getMetadata().getProviderALatencyMs());
+    combinedMetadata.setProviderBLatencyMs(resultB.getMetadata().getProviderBLatencyMs());
+    combinedMetadata.setProviderACount(resultA.getMetadata().getProviderACount());
+    combinedMetadata.setProviderBCount(resultB.getMetadata().getProviderBCount());
+    combinedMetadata.updateWithFlightData(allFlights);
+
+    return new FlightSearchResult(allFlights, combinedMetadata);
+  }
+
+  public FlightSearchResult searchFlightsFromProviderA(FlightSearchRequest request) {
+    long startTime = System.currentTimeMillis();
+
     SearchRequestA soapRequest = new SearchRequestA(
         request.getOrigin(),
         request.getDestination(),
@@ -51,10 +73,17 @@ public class FlightAggregatorService {
       }
     }
 
-    return flights;
+    long endTime = System.currentTimeMillis();
+    FlightSearchMetadata metadata = new FlightSearchMetadata();
+    metadata.setProviderALatencyMs((int) (endTime - startTime));
+    metadata.setProviderACount(flights.size());
+    metadata.updateWithFlightData(flights);
+    return new FlightSearchResult(flights, metadata);
   }
 
-  public List<FlightResponse> searchFlightsFromProviderB(FlightSearchRequest request) {
+  public FlightSearchResult searchFlightsFromProviderB(FlightSearchRequest request) {
+    long startTime = System.currentTimeMillis();
+
     SearchRequestB soapRequest = new SearchRequestB(
         request.getOrigin(),
         request.getDestination(),
@@ -76,12 +105,23 @@ public class FlightAggregatorService {
       }
     }
 
-    return flights;
+    long endTime = System.currentTimeMillis();
+
+    // Create metadata
+    FlightSearchMetadata metadata = new FlightSearchMetadata();
+    metadata.setProviderBLatencyMs((int) (endTime - startTime));
+    metadata.setProviderBCount(flights.size());
+    metadata.updateWithFlightData(flights);
+
+    return new FlightSearchResult(flights, metadata);
   }
 
-  public List<FlightResponse> getCheapestFlights(FlightSearchRequest request) {
-    List<FlightResponse> flightsA = searchFlightsFromProviderA(request);
-    List<FlightResponse> flightsB = searchFlightsFromProviderB(request);
+  public FlightSearchResult getCheapestFlights(FlightSearchRequest request) {
+    FlightSearchResult resultA = searchFlightsFromProviderA(request);
+    FlightSearchResult resultB = searchFlightsFromProviderB(request);
+
+    List<FlightResponse> flightsA = resultA.getFlights();
+    List<FlightResponse> flightsB = resultB.getFlights();
 
     // Used excepted to overcome the map resing. Map object load factor is 0.75. So
     // if we give it a capacity of 10 it will resize when we added the 8th element
@@ -96,7 +136,19 @@ public class FlightAggregatorService {
     for (FlightResponse fr : flightsB)
       cheapest.merge(keyOf(fr), fr, FlightAggregatorService::cheaper);
 
-    return cheapest.values().stream().sorted(Comparator.comparing(FlightResponse::getPrice)).toList();
+    List<FlightResponse> cheapestFlights = cheapest.values().stream()
+        .sorted(Comparator.comparing(FlightResponse::getPrice))
+        .toList();
+
+    // Create combined metadata with provider latencies
+    FlightSearchMetadata combinedMetadata = new FlightSearchMetadata();
+    combinedMetadata.setProviderALatencyMs(resultA.getMetadata().getProviderALatencyMs());
+    combinedMetadata.setProviderBLatencyMs(resultB.getMetadata().getProviderBLatencyMs());
+    combinedMetadata.setProviderACount(resultA.getMetadata().getProviderACount());
+    combinedMetadata.setProviderBCount(resultB.getMetadata().getProviderBCount());
+    combinedMetadata.updateWithFlightData(cheapestFlights);
+
+    return new FlightSearchResult(cheapestFlights, combinedMetadata);
   }
 
   private static FlightKey keyOf(FlightResponse fr) {
